@@ -402,15 +402,15 @@ function collectAppToScreen(screenName)
 end
 -- ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 -- 当前app放到DELL P2414H,DELL P2414H的窗口都放到Color LCD
-hs.hotkey.bind({"ctrl", "alt", "cmd", "shift"}, "1", function() collectAppToScreen("DELL P2414H") end) -- hyper+4
+hs.hotkey.bind({"ctrl", "alt", "cmd", "shift"}, "1", function() collectAppToScreen("DELL P2414H") end) -- hyper+1
 -- 当前app放到MX27AQ,MX27AQ的窗口都放到Color LCD
-hs.hotkey.bind({"ctrl", "alt", "cmd", "shift"}, "2", function() collectAppToScreen("MX27AQ") end) -- hyper+5
+hs.hotkey.bind({"ctrl", "alt", "cmd", "shift"}, "2", function() collectAppToScreen("MX27AQ") end) -- hyper+2
 -- 当前app放到Color LCD,Color LCD的窗口都放到华硕
-hs.hotkey.bind({"ctrl", "alt", "cmd", "shift"}, "3", function() collectAppToScreen("Color LCD") end) -- hyper+6
+hs.hotkey.bind({"ctrl", "alt", "cmd", "shift"}, "3", function() collectAppToScreen("Color LCD") end) -- hyper+3
 -- 整齐所有窗口
-hs.hotkey.bind({"ctrl", "alt", "cmd", "shift"}, "4", function() tile("MX27AQ") tile("DELL P2414H") tile("Color LCD") end) -- hyper+3
+hs.hotkey.bind({"ctrl", "alt", "cmd", "shift"}, "4", function() tile("MX27AQ") tile("DELL P2414H") tile("Color LCD") end) -- hyper+4
 -- 所有无关紧要的app(或者不规则的app)全部都放到Color LCD
-hs.hotkey.bind({"ctrl", "alt", "cmd", "shift"}, "5", function() -- hyper+7
+hs.hotkey.bind({"ctrl", "alt", "cmd", "shift"}, "5", function() -- hyper+5
     for i,win in ipairs(winf_IrregularNo:getWindows()) do
         win:moveOneScreenNorth(true)
     end
