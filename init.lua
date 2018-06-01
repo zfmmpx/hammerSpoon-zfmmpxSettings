@@ -437,10 +437,10 @@ end)
 hs.hotkey.bind({"alt"}, "F16", function() hs.window.focusedWindow():focusWindowWest(winf_twoScreen:getWindows(), nil, true) end) -- f1
 hs.hotkey.bind({"alt"}, "F19", function() hs.window.focusedWindow():focusWindowEast(winf_twoScreen:getWindows(), nil, true) end) -- f2
 
--- 竖直排列所有窗口
-hs.hotkey.bind({"ctrl"}, "F16", function() tile("MX27AQ", 0.01) tile("DELL P2414H", 0.01) tile("Color LCD", 0.01) end) -- f3
 -- 顺序排列当前屏幕窗口(调用hyper3用到的tile函数,不过只是tile当前的屏幕)
-hs.hotkey.bind({"ctrl"}, "F17", tileOrderly) -- f4
+hs.hotkey.bind({"ctrl"}, "F16", tileOrderly) -- f3
+-- 竖直排列所有窗口
+hs.hotkey.bind({"ctrl"}, "F17", function() tile("MX27AQ", 0.01) tile("DELL P2414H", 0.01) tile("Color LCD", 0.01) end) -- f4
 
 -- 改变窗口占据屏幕大小
 hs.hotkey.bind({"alt"}, "f17", layoutU, nil, layoutU) -- f8
