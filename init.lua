@@ -2,13 +2,79 @@ hs.window.animationDuration = 0
 hs.application.enableSpotlightForNameSearches(true)
 hs.loadSpoon("SpeedMenu")
 
-hs.hotkey.bind({"alt"}, "R", function() hs.reload()  end)
+-- focus窗口的时候关注条的宽度
+switchAppSettings = {
+    ["Google Chrome"] = 9,
+    ["微信"] = 14,
+    ["酷狗音乐"] = 10,
+    ["虾米音乐"] = 13,
+    ["Finder"] = 24,
+    ["App Store"] = 9,
+    ["系统偏好设置"] = 7,
+    ["Bear"] = 12,
+    ["Safari"] = 8
+}
 
+-- 各种filter
+winf_allWin = hs.window.filter.new():setDefaultFilter({}) -- 包括不可见窗口
+winf_allWinNoAlfred = hs.window.filter.new():setDefaultFilter({}):rejectApp("Alfred 3") -- regular windows including hidden and minimized ones
+winf_Inv = hs.window.filter.new():setDefaultFilter({visible = false}) -- 不可见窗口
+winf_noInv = hs.window.filter.new() -- 可见窗口
+winf_Irregular = hs.window.filter.new(false):setOverrideFilter():setFilters({
+    ["网易云音乐"] = {},
+    ["微信"] = {},
+    ["虾米音乐"] = {},
+    ["酷狗音乐"] = {},
+    ["QQ音乐"] = {},
+    ["Karabiner Preferences"] = {},
+    ["Karabiner-Elements"] = {},
+    ["Karabiner-EventViewer"] = {},
+    ["系统偏好设置"] = {},
+    ["计算器"] = {},
+    ["iTunes"] = {},
+    ["终端"] = {},
+    ["Keyboard Maestro"] = {},
+    ["Hammerspoon"] = {}
+})
+winf_IrregularNo = hs.window.filter.new():setOverrideFilter({allowScreens = "Color LCD"}):setFilters({
+    ["网易云音乐"] = false,
+    ["微信"] = false,
+    ["虾米音乐"] = false,
+    ["酷狗音乐"] = false,
+    ["QQ音乐"] = false,
+    ["Karabiner Preferences"] = false,
+    ["Karabiner-Elements"] = false,
+    ["Karabiner-EventViewer"] = false,
+    ["系统偏好设置"] = false,
+    ["计算器"] = false,
+    ["iTunes"] = false,
+    ["终端"] = false,
+    ["Keyboard Maestro"] = false,
+    ["Hammerspoon"] = false
+})
+winf_DELL = hs.window.filter.new():setOverrideFilter({["allowScreens"] = "DELL P2414H"})
+winf_MX27AQ = hs.window.filter.new():setOverrideFilter({["allowScreens"] = "MX27AQ"})
+winf_COLOR = hs.window.filter.new():setOverrideFilter({["allowScreens"] = "Color LCD"})
+winf_twoScreen = hs.window.filter.new():setOverrideFilter({allowScreens = {"DELL P2414H" ,"MX27AQ"}})
+
+-- 最大化窗口
+function maxInScreen()
+    local win = hs.window.focusedWindow() -- 获取当前窗口
+    local f = win:frame() -- 获得当前窗口的 h w x y
+    local screen = win:screen() -- 获得当前窗口所在的屏幕
+    local maxThis = screen:frame() -- 获得当前屏幕的 h w x y
+    f.x = maxThis.x
+    f.y = maxThis.y
+    f.w = maxThis.w
+    f.h = maxThis.h
+    win:setFrame(f)
+end
+
+-- 窗口大小占1/4屏幕
 function layoutU()
     local win = hs.window.focusedWindow() -- 获取当前窗口
     local f = win:frame() -- 获得当前窗口的 h w x y
     local screen = win:screen() -- 获得当前窗口所在的屏幕
-    print("jiba", screen:name())
     local maxThis = screen:frame() -- 获得当前屏幕的 h w x y
     if (f.x == maxThis.x + maxThis.w / 2)
     then
@@ -42,19 +108,16 @@ function layoutU()
             f.h = maxThis.h / 2
         end
     end
-
     outlineFocusedWindow(f)
     win:setFrame(f)
-    print(f)
-
-    return f
 end
 
+-- 窗口大小占1/6屏幕
 function layoutY()
     local win = hs.window.focusedWindow() -- 获取当前窗口
     local f = win:frame() -- 获得当前窗口的 h w x y
     local screen = win:screen() -- 获得当前窗口所在的屏幕
-    print("jiba", screen)
+    print("当前屏幕:", screen)
     local maxThis = screen:frame() -- 获得当前屏幕的 h w x y
     if (f.x == maxThis.x + math.floor(maxThis.w / 3))
     then
@@ -111,13 +174,9 @@ function layoutY()
         end
 
     end
-
-    print(f)
     outlineFocusedWindow(f)
     win:setFrame(f)
-    print(f)
-
-    return f
+    print("当前应用的frame:", f)
 end
 
 -- 窗口水平移动
@@ -282,63 +341,76 @@ function moveV(down)
     end
 end
 
-hs.hotkey.bind({"shift", "alt"}, "f18", layoutY, nil, layoutY) -- fy
-hs.hotkey.bind({"shift", "alt"}, "f19", layoutU, nil, layoutU) -- fu
-hs.hotkey.bind({"alt"}, "F16", moveH(0), nil, moveH(0)) -- fh
-hs.hotkey.bind({"alt"}, "F17", moveV(1), nil, moveV(1)) -- fj
-hs.hotkey.bind({"alt"}, "F18", moveV(0), nil, moveV(0)) -- fk
-hs.hotkey.bind({"alt"}, "F19", moveH(1), nil, moveH(1)) -- fl
--- ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-function tile(screenName, keepOrder, keepScale)
-    return function()
-        print(hs.window.allWindows())
-        local screen = hs.screen.find(screenName)
-        local frame = screen:frame()
-        -- 后面两个boolean, 第一个关于次序:getWindows(),按照获得的的list进行排序,依次tile; 第二个关于是否尽量保持个窗口大小之间的比例(但是无关窗口形状,只比对面积的相对大小)
-        winf_screen = hs.window.filter.new():setOverrideFilter({allowScreens = screenName})
-        hs.window.tiling.tileWindows(winf_screen:getWindows(), frame, 1, keepOrder, keepScale)
-        outlineFocusedWindowGetFrameFirst()
+-- 整齐窗口
+function tile(screenName, myAspect, keepOrder, keepScale)
+    local screen = hs.screen.find(screenName)
+    local frame = screen:frame()
+    -- 后面两个boolean, 第一个关于次序:getWindows(),按照获得的的list进行排序,依次tile; 第二个关于是否尽量保持个窗口大小之间的比例(但是无关窗口形状,只比对面积的相对大小)
+    winf_screen = hs.window.filter.new():setOverrideFilter({allowScreens = screenName})
+    local wins = winf_screen:getWindows()
+    local desiredAspect = 1
+    -- 判断win的数量, 再决定desiredAspect
+    print(#wins)
+    if (screenName == "DELL P2414H")
+    then
+        desiredAspect = 100
+    else
+        if (#wins == 3)
+        then
+            desiredAspect = 0.01
+        end
     end
+    if (myAspect) then desiredAspect = myAspect end
+    hs.window.tiling.tileWindows(wins, frame, desiredAspect, keepOrder, keepScale)
+    outlineFocusedWindowGetFrameFirst()
 end
 
+function tileOrderly()
+    local win = hs.window.focusedWindow()
+    local screen = win:screen()
+    local screenName = screen:name()
+    tile(screenName, desiredAspect, true, true)
+end
 
-winf_allWin = hs.window.filter.new():setDefaultFilter({}) -- 包括不可见窗口
-winf_allWinNoAlfred = hs.window.filter.new():setDefaultFilter({}):rejectApp("Alfred 3") -- regular windows including hidden and minimized ones
-winf_Inv = hs.window.filter.new():setDefaultFilter({visible = false}) -- 不可见窗口
-winf_noInv = hs.window.filter.new() -- 可见窗口
-winf_Irregular = hs.window.filter.new(false):setOverrideFilter():setFilters({
-    ["网易云音乐"] = {},
-    ["微信"] = {},
-    ["虾米音乐"] = {},
-    ["酷狗音乐"] = {},
-    ["QQ音乐"] = {},
-    ["Karabiner Preferences"] = {},
-    ["Karabiner-Elements"] = {},
-    ["Karabiner-EventViewer"] = {},
-    ["系统偏好设置"] = {},
-    ["计算器"] = {},
-    ["iTunes"] = {}
-})
-winf_IrregularNo = hs.window.filter.new():setOverrideFilter({allowScreens = "Color LCD"}):setFilters({
-    ["网易云音乐"] = false,
-    ["微信"] = false,
-    ["虾米音乐"] = false,
-    ["酷狗音乐"] = false,
-    ["QQ音乐"] = false,
-    ["Karabiner Preferences"] = false,
-    ["Karabiner-Elements"] = false,
-    ["Karabiner-EventViewer"] = false,
-    ["系统偏好设置"] = false,
-    ["计算器"] = false,
-    ["iTunes"] = false
-})
+-- 收集窗口
+function collectAppToScreen(screenName)
+    local win = hs.window.focusedWindow()
+    local app = win:application()
+    local appName = app:name()
+    local app_winf = hs.window.filter.new(false):setAppFilter(appName, {visible = true})
+    local wins = app_winf:getWindows()
 
-winf_DELL = hs.window.filter.new():setOverrideFilter({["allowScreens"] = "DELL P2414H"})
-winf_MX27AQ = hs.window.filter.new():setOverrideFilter({["allowScreens"] = "MX27AQ"})
-winf_COLOR = hs.window.filter.new():setOverrideFilter({["allowScreens"] = "Color LCD"})
-
-
-hs.hotkey.bind({"cmd"}, "F16", function()                                                                                                        -- F8 关于Color LCD
+    local screen = hs.screen.find(screenName)
+    local frame = screen:frame()
+    local desiredAspect = 1
+    
+    local winf_screen = hs.window.filter.new():setOverrideFilter({allowScreens = screenName}):setAppFilter(appName, false)
+    for i,win in ipairs(winf_screen:getWindows()) do
+        print("haha")
+        if (not win:moveOneScreenSouth(true)) then win:moveOneScreenNorth(true) end
+    end
+    if (screenName == "DELL P2414H")
+    then
+        desiredAspect = 100
+    else
+        if (#wins == 3)
+        then
+            desiredAspect = 0.01
+        end
+    end
+    hs.window.tiling.tileWindows(wins, frame, desiredAspect, false, false)
+end
+-- ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+-- 当前app放到DELL P2414H,DELL P2414H的窗口都放到Color LCD
+hs.hotkey.bind({"ctrl", "alt", "cmd", "shift"}, "1", function() collectAppToScreen("DELL P2414H") end) -- hyper+4
+-- 当前app放到MX27AQ,MX27AQ的窗口都放到Color LCD
+hs.hotkey.bind({"ctrl", "alt", "cmd", "shift"}, "2", function() collectAppToScreen("MX27AQ") end) -- hyper+5
+-- 当前app放到Color LCD,Color LCD的窗口都放到华硕
+hs.hotkey.bind({"ctrl", "alt", "cmd", "shift"}, "3", function() collectAppToScreen("Color LCD") end) -- hyper+6
+-- 整齐所有窗口
+hs.hotkey.bind({"ctrl", "alt", "cmd", "shift"}, "4", function() tile("MX27AQ") tile("DELL P2414H") tile("Color LCD") end) -- hyper+3
+-- 所有无关紧要的app(或者不规则的app)全部都放到Color LCD
+hs.hotkey.bind({"ctrl", "alt", "cmd", "shift"}, "5", function() -- hyper+7
     for i,win in ipairs(winf_IrregularNo:getWindows()) do
         win:moveOneScreenNorth(true)
     end
@@ -346,37 +418,72 @@ hs.hotkey.bind({"cmd"}, "F16", function()                                       
     local frame = screen:frame()
     hs.window.tiling.tileWindows(winf_Irregular:getWindows(), frame, 1, false, false)
 end)
-hs.hotkey.bind({"cmd"}, "F17", function()                                                                                                         -- F5 恢复当前app的所有窗口(最小化用cmd+h)
+
+-- 切换窗口
+hs.hotkey.bind({}, "F16", function() -- 左
+    hs.window.focusedWindow():focusWindowWest(winf_noInv:getWindows(), nil, true)
+end)
+hs.hotkey.bind({}, "F17", function() -- 下
+    hs.window.focusedWindow():focusWindowSouth(winf_noInv:getWindows(), nil, true)
+end)
+hs.hotkey.bind({}, "F18", function() -- 上
+    hs.window.focusedWindow():focusWindowNorth(winf_noInv:getWindows(), nil, true)
+end)
+hs.hotkey.bind({}, "F19", function() -- 右
+    hs.window.focusedWindow():focusWindowEast(winf_noInv:getWindows(), nil, true)
+end)
+
+-- 两个大屏幕切换窗口
+hs.hotkey.bind({"alt"}, "F16", function() hs.window.focusedWindow():focusWindowWest(winf_twoScreen:getWindows(), nil, true) end) -- f1
+hs.hotkey.bind({"alt"}, "F19", function() hs.window.focusedWindow():focusWindowEast(winf_twoScreen:getWindows(), nil, true) end) -- f2
+
+-- 竖直排列所有窗口
+hs.hotkey.bind({"ctrl"}, "F16", function() tile("MX27AQ", 0.01) tile("DELL P2414H", 0.01) tile("Color LCD", 0.01) end) -- f3
+-- 顺序排列当前屏幕窗口(调用hyper3用到的tile函数,不过只是tile当前的屏幕)
+hs.hotkey.bind({"ctrl"}, "F17", tileOrderly) -- f4
+
+-- 改变窗口占据屏幕大小
+hs.hotkey.bind({"alt"}, "f17", layoutU, nil, layoutU) -- f8
+-- 最大化窗口
+hs.hotkey.bind({"alt"}, "f18", maxInScreen) -- escape
+
+-- 移动窗口
+hs.hotkey.bind({"shift"}, "F16", moveH(0), nil, moveH(0)) -- shift+左 或 f7
+hs.hotkey.bind({"shift"}, "F17", moveV(1), nil, moveV(1)) -- shift+下
+hs.hotkey.bind({"shift"}, "F18", moveV(0), nil, moveV(0)) -- shift+上
+hs.hotkey.bind({"shift"}, "F19", moveH(1), nil, moveH(1)) -- shift+右 或 f9
+
+-- 窗口都恢复
+hs.hotkey.bind({"cmd"}, "F16",  function() -- cmd 左
+    -- hammerspoon这个app比较特殊, 在default里面已经设置过, 现在将他设置为Hammerspoon = {},
+    for _, window in ipairs(hs.window.filter.new():setDefaultFilter({visible = false}):setAppFilter("Hammerspoon", {}):getWindows()) do
+    window:unminimize()
+    end
+end)
+-- 当前app的所有窗口最小化
+hs.hotkey.bind({"cmd"}, "F17", function() -- cmd+下
+    local win = hs.window.focusedWindow()
+    local app = win:application() 
+    for _, window in ipairs(app:allWindows()) do
+        window:minimize()
+    end
+end)
+-- 当前app的所有窗口最大化
+hs.hotkey.bind({"cmd"}, "F18", function() -- cmd+上
     local win = hs.window.focusedWindow()
     local app = win:application() 
     for _, window in ipairs(app:allWindows()) do
         window:unminimize()
     end
 end)
-hs.hotkey.bind({"cmd"}, "F18",  function()                                                                                                        -- F6 恢复显示所有最小化窗口(最小化没必要)
-    -- hammerspoon这个app比较特殊, 在default里面已经设置过, 现在将他设置为Hammerspoon = {},
-    for _, window in ipairs(hs.window.filter.new():setDefaultFilter({visible = false}):setAppFilter("Hammerspoon", {}):getWindows()) do
-    window:unminimize()
+-- 窗口都最小
+hs.hotkey.bind({"cmd"}, "F19", function() -- cmd+右
+    for _, wins in ipairs(winf_noInv:getWindows()) do
+        wins:minimize()
     end
 end)
-hs.hotkey.bind({"shift"}, "F16", tile("DELL p2414h"))                                                                                               -- F10 tile DELL
-hs.hotkey.bind({"shift"}, "F17", tile("MX27AQ"))                                                                                                 -- F9 tile Color LCD
-hs.hotkey.bind({"shift"}, "F18", tile("MX27AQ", true, true))                                                                                       -- F11 tile MX27AQ
-hs.hotkey.bind({"shift"}, "F19", tile("Color LCD"))                                                                                                   -- F11 tile MX27AQ
+-- ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 
-
-hs.hotkey.bind({}, "F16", function()
-    hs.window.focusedWindow():focusWindowWest(winf_noInv:getWindows(), nil, true)
-end)
-hs.hotkey.bind({}, "F17", function()
-    hs.window.focusedWindow():focusWindowSouth(winf_noInv:getWindows(), nil, true)
-end)
-hs.hotkey.bind({}, "F18", function() 
-    hs.window.focusedWindow():focusWindowNorth(winf_noInv:getWindows(), nil, true)
-end)
-hs.hotkey.bind({}, "F19", function()
-    hs.window.focusedWindow():focusWindowEast(winf_noInv:getWindows(), nil, true)
-end)
 
 
 -- ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
@@ -389,41 +496,21 @@ function outlineFocusedWindow(f)
         end
     end
 
-    local win = hs.window.focusedWindow()
+    local win = hs.window.frontmostWindow()
     local app = win:application()
-    print("加吧" .. app:name())
+    print("应用:" .. app:name())
     local height
-    local strokeWidth
     
-    local switch = {
-        ["Google Chrome"] = 9,
-        ["微信"] = 14,
-        ["酷狗音乐"] = 10,
-        ["虾米音乐"] = 13,
-        ["Finder"] = 24,
-        ["App Store"] = 9,
-        ["系统偏好设置"] = 7,
-        ["Bear"] = 12
-    }
-    
-    local height = switch[app:name()]
+    local height = switchAppSettings[app:name()]
     if (not height) then 
         height = 22 
-    end
-    if(app:name() == "Google Chrome") then height = 9 end
-    if(app:name() == "微信") then height = 14 end
-    
+    end    
     WindowOutline = hs.drawing.rectangle(hs.geometry.point(f.x, f.y, f.w, height))
-
-    -- WindowOutline:setFillColor({["hex"]="#d2ff00", ["alpha"]=0.5})
     WindowOutline:setFillColor({["hex"]="#28a56b", ["alpha"]=0.5})
-    -- WindowOutline:setFillColor({["hex"]="#bb5656", ["alpha"]=0.5})
     WindowOutline:setStroke(false)
     WindowOutline:setFill(true)
     WindowOutline:show()
-
-    -- Set a timer to delete the circle after 3 seconds
-    -- WindowOutlineTimer = hs.timer.doAfter(0.3, function() WindowOutline:delete() end)
+    
 
     -- -- reminder
     -- -- Delete an existing highlight if it exists
@@ -433,7 +520,8 @@ function outlineFocusedWindow(f)
     --         reminderTimer:stop()
     --     end
     -- end
-
+    
+    -- local strokeWidth
     -- -- Prepare a big red circle around the mouse pointer
     -- reminder = hs.drawing.rectangle(f)
     -- -- reminder:setStrokeColor({["red"]=1,["blue"]=0,["green"]=0,["alpha"]=1})
@@ -448,7 +536,11 @@ end
 
 function outlineFocusedWindowGetFrameFirst()
     local winGet = hs.window.focusedWindow() -- 获取当前窗口.
-    local f = winGet:frame() -- 获得当前窗口的 h w x y
+    local f = hs.geometry.rect(0,0,0,0)
+    if (winGet) then
+        f = winGet:frame()
+        print(f)
+    end
     outlineFocusedWindow(f)
 end
 
@@ -472,5 +564,13 @@ winf_allWinNoAlfred:subscribe(hs.window.filter.windowDestroyed, function(win, ap
         winf_noInv:getWindows(hs.window.filter.sortByFocusedLast)[1]:focus()        
     end
 end, true)
+-- ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
 
+
+
+
+
+
+
+hs.hotkey.bind({"alt"}, "R", function() hs.reload()  end)
 hs.alert.show("Config loaded")
