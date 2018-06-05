@@ -8,7 +8,7 @@ switchAppSettings = {
     ["微信"] = 14,
     ["酷狗音乐"] = 10,
     ["虾米音乐"] = 13,
-    ["Finder"] = 24,
+    -- ["Finder"] = 24,
     ["App Store"] = 9,
     ["系统偏好设置"] = 7,
     ["Bear"] = 12,
@@ -16,6 +16,7 @@ switchAppSettings = {
 }
 
 -- 各种filter
+winf_ALL = hs.window.filter.new(true)
 winf_allWin = hs.window.filter.new():setDefaultFilter({}) -- 包括不可见窗口
 winf_allWinNoAlfred = hs.window.filter.new():setDefaultFilter({}):rejectApp("Alfred 3") -- regular windows including hidden and minimized ones
 winf_Inv = hs.window.filter.new():setDefaultFilter({visible = false}) -- 不可见窗口
@@ -70,6 +71,7 @@ function maxInScreen()
     win:setFrame(f)
 end
 
+
 -- 窗口大小占1/4屏幕
 function layoutU()
     local win = hs.window.focusedWindow() -- 获取当前窗口
@@ -108,7 +110,7 @@ function layoutU()
             f.h = maxThis.h / 2
         end
     end
-    outlineFocusedWindow(f)
+    outlineFocusedWindow()
     win:setFrame(f)
 end
 
@@ -117,7 +119,6 @@ function layoutY()
     local win = hs.window.focusedWindow() -- 获取当前窗口
     local f = win:frame() -- 获得当前窗口的 h w x y
     local screen = win:screen() -- 获得当前窗口所在的屏幕
-    print("当前屏幕:", screen)
     local maxThis = screen:frame() -- 获得当前屏幕的 h w x y
     if (f.x == maxThis.x + math.floor(maxThis.w / 3))
     then
@@ -164,7 +165,6 @@ function layoutY()
         elseif (f.w == maxThis.w and f.h == math.floor(maxThis.h / 3))
         then
             f.h = f.h * 2
-            print("jijibaba", f.h)
         elseif (f.w == maxThis.w and f.h == math.floor(maxThis.h / 3 * 2))
         then
             f.h = maxThis.h
@@ -174,16 +174,14 @@ function layoutY()
         end
 
     end
-    outlineFocusedWindow(f)
+    outlineFocusedWindow()
     win:setFrame(f)
-    print("当前应用的frame:", f)
 end
 
 -- 窗口水平移动
 function moveH(toRight)
     return function()
         local win = hs.window.focusedWindow() -- 获取当前窗口
-        print(win:application())
         local f = win:frame() -- 获得当前窗口的 h w x y
         local screen = win:screen() -- 获得当前窗口所在的屏幕
         local maxThis = screen:frame() -- 获得当前屏幕的 h w x y
@@ -217,8 +215,6 @@ function moveH(toRight)
                 then
                     f.y = maxNext.y + maxNext.h - f.h
                     f.x = maxNext.x
-                    print("hahaxi", maxNext)
-                    print(bottomNext)
                 end
             -- 4.移动之后会超越当前screen右边界, 就靠边停靠
             elseif (f.x + f.w + f.w) >= (rightThis - 2) -- 这里把elseif改为if 删掉上面的if就行
@@ -257,9 +253,8 @@ function moveH(toRight)
             end
         end
 
-        outlineFocusedWindow(f)
+        outlineFocusedWindow()
         win:setFrame(f)
-        print(f)
     end
 end
 
@@ -334,10 +329,8 @@ function moveV(down)
             end
         end
 
-        outlineFocusedWindow(f)
+        outlineFocusedWindow()
         win:setFrame(f)
-
-        print(f)
     end
 end
 
@@ -350,7 +343,6 @@ function tile(screenName, myAspect, keepOrder, keepScale)
     local wins = winf_screen:getWindows()
     local desiredAspect = 1
     -- 判断win的数量, 再决定desiredAspect
-    print(#wins)
     if (screenName == "DELL P2414H")
     then
         desiredAspect = 100
@@ -362,7 +354,7 @@ function tile(screenName, myAspect, keepOrder, keepScale)
     end
     if (myAspect) then desiredAspect = myAspect end
     hs.window.tiling.tileWindows(wins, frame, desiredAspect, keepOrder, keepScale)
-    outlineFocusedWindowGetFrameFirst()
+    outlineFocusedWindow()
 end
 
 function tileOrderly()
@@ -386,7 +378,6 @@ function collectAppToScreen(screenName)
     
     local winf_screen = hs.window.filter.new():setOverrideFilter({allowScreens = screenName}):setAppFilter(appName, false)
     for i,win in ipairs(winf_screen:getWindows()) do
-        print("haha")
         if (not win:moveOneScreenSouth(true)) then win:moveOneScreenNorth(true) end
     end
     if (screenName == "DELL P2414H")
@@ -453,11 +444,10 @@ hs.hotkey.bind({"shift"}, "F17", moveV(1), nil, moveV(1)) -- shift+下
 hs.hotkey.bind({"shift"}, "F18", moveV(0), nil, moveV(0)) -- shift+上
 hs.hotkey.bind({"shift"}, "F19", moveH(1), nil, moveH(1)) -- shift+右 或 f9
 
--- 窗口都恢复
-hs.hotkey.bind({"cmd"}, "F16",  function() -- cmd 左
-    -- hammerspoon这个app比较特殊, 在default里面已经设置过, 现在将他设置为Hammerspoon = {},
-    for _, window in ipairs(hs.window.filter.new():setDefaultFilter({visible = false}):setAppFilter("Hammerspoon", {}):getWindows()) do
-    window:unminimize()
+-- 窗口都最小
+hs.hotkey.bind({"cmd"}, "F16", function() -- cmd+右
+    for _, wins in ipairs(winf_noInv:getWindows()) do
+        wins:minimize()
     end
 end)
 -- 当前app的所有窗口最小化
@@ -476,10 +466,11 @@ hs.hotkey.bind({"cmd"}, "F18", function() -- cmd+上
         window:unminimize()
     end
 end)
--- 窗口都最小
-hs.hotkey.bind({"cmd"}, "F19", function() -- cmd+右
-    for _, wins in ipairs(winf_noInv:getWindows()) do
-        wins:minimize()
+-- 窗口都恢复
+hs.hotkey.bind({"cmd"}, "F19",  function() -- cmd 左
+    -- hammerspoon这个app比较特殊, 在default里面已经设置过, 现在将他设置为Hammerspoon = {},
+    for _, window in ipairs(hs.window.filter.new():setDefaultFilter({visible = false}):setAppFilter("Hammerspoon", {}):getWindows()) do
+    window:unminimize()
     end
 end)
 -- ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
@@ -487,7 +478,7 @@ end)
 
 
 -- ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
-function outlineFocusedWindow(f)
+function outlineFocusedWindow()
     -- Delete an existing highlight if it exists
     if WindowOutline then
         WindowOutline:delete()
@@ -495,15 +486,19 @@ function outlineFocusedWindow(f)
             WindowOutlineTimer:stop()
         end
     end
-
+    -- local f
+    -- local f = hs.geometry.rect(0,0,0,0)
     local win = hs.window.frontmostWindow()
     local app = win:application()
-    print("应用:" .. app:name())
-    local height
+    local f = win:frame()
+    -- if (win) then f = win:frame() end
+
     
+    print("前面的是" , app:name(), f)
+
     local height = switchAppSettings[app:name()]
     if (not height) then 
-        height = 22 
+        height = 22
     end    
     WindowOutline = hs.drawing.rectangle(hs.geometry.point(f.x, f.y, f.w, height))
     WindowOutline:setFillColor({["hex"]="#28a56b", ["alpha"]=0.5})
@@ -534,19 +529,15 @@ function outlineFocusedWindow(f)
     -- reminderTimer = hs.timer.doAfter(0.38, function() reminder:delete() end)
 end
 
-function outlineFocusedWindowGetFrameFirst()
-    local winGet = hs.window.focusedWindow() -- 获取当前窗口.
-    local f = hs.geometry.rect(0,0,0,0)
-    if (winGet) then
-        f = winGet:frame()
-        print(f)
-    end
-    outlineFocusedWindow(f)
-end
 
-winf_allWin:subscribe(hs.window.filter.windowFocused, outlineFocusedWindowGetFrameFirst, true)
-winf_allWin:subscribe(hs.window.filter.windowMoved, outlineFocusedWindowGetFrameFirst, true)
-winf_allWin:subscribe(hs.window.filter.windowMinimized, function(win, appName, event)
+
+
+
+winf_ALL:subscribe(hs.window.filter.windowFocused, outlineFocusedWindow, true)
+winf_ALL:subscribe(hs.window.filter.windowUnfocused, outlineFocusedWindow, true)
+winf_ALL:subscribe(hs.window.filter.windowMoved, outlineFocusedWindow, true)
+
+winf_noInv:subscribe(hs.window.filter.windowMinimized, function(win, appName, event)
     -- 获得当前app的filter,不包括不可见窗口
     app_winf = hs.window.filter.new(false):setAppFilter(appName, {visible = true})
 
@@ -558,7 +549,7 @@ end, true)
 winf_allWinNoAlfred:subscribe(hs.window.filter.windowDestroyed, function(win, appName, event)
     -- 获得当前app的filter,不包括不可见窗口
     app_winf = hs.window.filter.new(false):setAppFilter(appName, {visible = true})
-
+    
     if #app_winf:getWindows() == 0 
     then
         winf_noInv:getWindows(hs.window.filter.sortByFocusedLast)[1]:focus()        
@@ -572,5 +563,5 @@ end, true)
 
 
 
-hs.hotkey.bind({"alt"}, "R", function() hs.reload()  end)
+hs.hotkey.bind({"ctrl", "alt", "cmd"}, "R", function() hs.reload()  end)
 hs.alert.show("Config loaded")
