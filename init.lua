@@ -70,6 +70,30 @@ function maxInScreen()
     f.h = maxThis.h
     win:setFrame(f)
 end
+-- 窗口放左边
+function halfScreenLeft()
+    local win = hs.window.focusedWindow() -- 获取当前窗口
+    local f = win:frame() -- 获得当前窗口的 h w x y
+    local screen = win:screen() -- 获得当前窗口所在的屏幕
+    local maxThis = screen:frame() -- 获得当前屏幕的 h w x y
+    f.x = maxThis.x
+    f.y = maxThis.y
+    f.w = maxThis.w
+    f.h = maxThis.h
+    win:setFrame(f)
+end
+-- 窗口放右边
+function halfScreenRight()
+    local win = hs.window.focusedWindow() -- 获取当前窗口
+    local f = win:frame() -- 获得当前窗口的 h w x y
+    local screen = win:screen() -- 获得当前窗口所在的屏幕
+    local maxThis = screen:frame() -- 获得当前屏幕的 h w x y
+    f.x = maxThis.x
+    f.y = maxThis.y
+    f.w = maxThis.w
+    f.h = maxThis.h
+    win:setFrame(f)
+end
 
 
 -- 窗口大小占1/4屏幕
@@ -337,6 +361,7 @@ end
 -- 整齐窗口
 function tile(screenName, myAspect, keepOrder, keepScale)
     local screen = hs.screen.find(screenName)
+    if (not screen) then return end
     local frame = screen:frame()
     -- 后面两个boolean, 第一个关于次序:getWindows(),按照获得的的list进行排序,依次tile; 第二个关于是否尽量保持个窗口大小之间的比例(但是无关窗口形状,只比对面积的相对大小)
     winf_screen = hs.window.filter.new():setOverrideFilter({allowScreens = screenName})
@@ -354,7 +379,7 @@ function tile(screenName, myAspect, keepOrder, keepScale)
     end
     if (myAspect) then desiredAspect = myAspect end
     hs.window.tiling.tileWindows(wins, frame, desiredAspect, keepOrder, keepScale)
-    outlineFocusedWindow()
+    outlineFocusedWindow() 
 end
 
 function tileOrderly()
@@ -411,16 +436,16 @@ hs.hotkey.bind({"ctrl", "alt", "cmd", "shift"}, "5", function() -- hyper+5
 end)
 
 -- 切换窗口
-hs.hotkey.bind({}, "F16", function() -- 左
+hs.hotkey.bind({"shift"}, "F16", function() -- 左
     hs.window.focusedWindow():focusWindowWest(winf_noInv:getWindows(), nil, true)
 end)
-hs.hotkey.bind({}, "F17", function() -- 下
+hs.hotkey.bind({"shift"}, "F17", function() -- 下
     hs.window.focusedWindow():focusWindowSouth(winf_noInv:getWindows(), nil, true)
 end)
-hs.hotkey.bind({}, "F18", function() -- 上
+hs.hotkey.bind({"shift"}, "F18", function() -- 上
     hs.window.focusedWindow():focusWindowNorth(winf_noInv:getWindows(), nil, true)
 end)
-hs.hotkey.bind({}, "F19", function() -- 右
+hs.hotkey.bind({"shift"}, "F19", function() -- 右
     hs.window.focusedWindow():focusWindowEast(winf_noInv:getWindows(), nil, true)
 end)
 
@@ -439,10 +464,10 @@ hs.hotkey.bind({"alt"}, "f17", layoutU, nil, layoutU) -- f8
 hs.hotkey.bind({"alt"}, "f18", maxInScreen) -- escape
 
 -- 移动窗口
-hs.hotkey.bind({"shift"}, "F16", moveH(0), nil, moveH(0)) -- shift+左 或 f7
-hs.hotkey.bind({"shift"}, "F17", moveV(1), nil, moveV(1)) -- shift+下
-hs.hotkey.bind({"shift"}, "F18", moveV(0), nil, moveV(0)) -- shift+上
-hs.hotkey.bind({"shift"}, "F19", moveH(1), nil, moveH(1)) -- shift+右 或 f9
+hs.hotkey.bind({}, "F16", moveH(0), nil, moveH(0)) -- shift+左 或 f7
+hs.hotkey.bind({}, "F17", moveV(1), nil, moveV(1)) -- shift+下
+hs.hotkey.bind({}, "F18", moveV(0), nil, moveV(0)) -- shift+上
+hs.hotkey.bind({}, "F19", moveH(1), nil, moveH(1)) -- shift+右 或 f9
 
 -- 窗口都最小
 hs.hotkey.bind({"cmd"}, "F16", function() -- cmd+右
@@ -556,9 +581,6 @@ winf_allWinNoAlfred:subscribe(hs.window.filter.windowDestroyed, function(win, ap
     end
 end, true)
 -- ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
-
-
-
 
 
 
